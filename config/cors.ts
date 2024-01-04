@@ -20,7 +20,7 @@ const corsConfig: CorsConfig = {
   | you can define a function to enable/disable it on per request basis as well.
   |
   */
-  enabled: false,
+  enabled: true,
 
   // You can also use a function that return true or false.
   // enabled: (request) => request.url().startsWith('/api')
@@ -81,7 +81,7 @@ const corsConfig: CorsConfig = {
   |--------------------------------------------------------------------------
   | Expose Headers
   |--------------------------------------------------------------------------
-  |
+  |ff
   | A list of headers to be exposed by setting `Access-Control-Expose-Headers`.
   | header. By default following 6 simple response headers are exposed.
   |

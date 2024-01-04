@@ -7,7 +7,7 @@ import Mail from '@ioc:Adonis/Addons/Mail'
 import otpGenerator from 'otp-generator'
 import Redis from '@ioc:Adonis/Addons/Redis'
 
-const process.env.CYCLIC_DB
+//const process.env.CYCLIC_DB
 
 const CyclicDB = require('@cyclic.sh/dynamodb')
 console.log(process.env.CYCLIC_DB)
