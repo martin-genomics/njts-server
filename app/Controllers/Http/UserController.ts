@@ -8,18 +8,40 @@ import otpGenerator from 'otp-generator'
 import Redis from '@ioc:Adonis/Addons/Redis'
 
 //const process.env.CYCLIC_DB
-
-const CyclicDB = require('@cyclic.sh/dynamodb')
-console.log(process.env.CYCLIC_DB)
-
-const fs = require('@cyclic.sh/s3fs/promises')(process.env.CYCLIC_BUCKET_NAME)
-
 interface Credentials {
   email: string
   username: string
   password: string
 }
 
+async function sendEmail(email) {
+  try {
+    const otp = otpGenerator.generate(6, {
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      digits: true,
+      specialChars: false,
+    })
+
+    await Redis.set(`auth_${email}`, JSON.stringify({ email: email, otp: otp }))
+
+    await Mail.use('smtp').send(
+      (message) => {
+        message.from('no-reply@njts.com')
+        message.to(email)
+        message.subject('NJTS: Account Verification')
+        message.html(`
+      ${otp}
+    `)
+      },
+      {
+        oTAGS: ['signup'],
+      }
+    )
+  } catch (error) {
+    console.log(error)
+  }
+}
 export default class UserController {
   public async index({ response, auth }: HttpContextContract) {
     const user = await auth.use('user').authenticate()
@@ -73,10 +95,15 @@ export default class UserController {
     neWcustomer.related('purchaseHistory').create({
       product_id: 2,
     })
+
+    await sendEmail(email)
     return response.json({
-      message: 'Account Created',
-      status: true,
-      user: neWcustomer.toJSON(),
+      success: true,
+      message:
+        'Account created. The verification code has been sent to your email address and it will expire in 60s',
+      data: {
+        action: 'verification',
+      },
     })
   }
 
@@ -204,12 +231,9 @@ export default class UserController {
         digits: true,
         specialChars: false,
       })
-      console.log('----------------------')
-      const db = CyclicDB()
-      const auth = db.collection('auth')
-      let u = await auth.set(`auth_${email}`, { email: email, otp: otp })
-      console.log(u)
-      console.log('-----------------------')
+
+      await Redis.set(`auth_${email}`, JSON.stringify({ email: email, otp: otp }))
+
       await Mail.use('smtp').send(
         (message) => {
           message.from('no-reply@njts.com')
@@ -237,10 +261,13 @@ export default class UserController {
       })
     }
   }
+
   public async verifyOTP({ request, response }: HttpContextContract) {
     const { email, otp } = request.only(['email', 'otp'])
     try {
       const data = await Redis.get(`auth_${email}`)
+      console.log('data', data)
+
       if (!data) {
         return response.unauthorized({
           success: false,
@@ -252,7 +279,9 @@ export default class UserController {
       }
 
       const data2 = JSON.parse(data)
-      if (!(data2.otp === otp)) {
+      console.log('data2', data2)
+
+      if (!(Number(data2.otp) === Number(otp))) {
         return response.unauthorized({
           success: false,
           message: 'This verification is incorrect.',
@@ -261,7 +290,6 @@ export default class UserController {
           },
         })
       }
-
       const user = await User.findBy('email', email)
       if (!user) {
         return response.unauthorized({
