@@ -265,6 +265,17 @@ export default class UserController {
   public async verifyOTP({ request, response }: HttpContextContract) {
     const { email, otp } = request.only(['email', 'otp'])
     try {
+      const client = await User.findBy('email', email)
+      if (!client) {
+        return response.unauthorized({ success: false, message: 'This email does not exist.' })
+      }
+
+      if (client.verified) {
+        return response.unauthorized({
+          success: false,
+          message: 'This email address is already verified',
+        })
+      }
       const data = await Redis.get(`auth_${email}`)
       console.log('data', data)
 
@@ -284,12 +295,13 @@ export default class UserController {
       if (!(Number(data2.otp) === Number(otp))) {
         return response.unauthorized({
           success: false,
-          message: 'This verification is incorrect.',
+          message: 'This verification code is incorrect.',
           data: {
             action: 'resend',
           },
         })
       }
+
       const user = await User.findBy('email', email)
       if (!user) {
         return response.unauthorized({
@@ -303,8 +315,9 @@ export default class UserController {
 
       user.verified = true
       await user.save()
-      return response.unauthorized({
-        success: false,
+      await Redis.del(`auth_${email}`)
+      return response.json({
+        success: true,
         message: 'You have been verified',
         data: {
           action: 'login',
