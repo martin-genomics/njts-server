@@ -214,7 +214,7 @@ export default class UserController {
   public async generateOTP({ request, response }: HttpContextContract) {
     const { email } = request.only(['email'])
     try {
-      const user = await User.findBy('email', email)
+      const user = (await User.findBy('email', email)) || (await User.findBy('username', email))
       if (!user) {
         return response.unauthorized({ success: false, message: 'This email does not exist.' })
       }
@@ -252,6 +252,9 @@ export default class UserController {
         success: true,
         message:
           'The verification code has been sent to your email address and it will expire in 60s',
+        data: {
+          user: user.email,
+        },
       })
     } catch (error) {
       console.log(error)
