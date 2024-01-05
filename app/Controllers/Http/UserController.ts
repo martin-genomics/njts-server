@@ -111,7 +111,6 @@ export default class UserController {
     var email = request.input('email')
     var username = request.input('username')
     var password = request.input('password')
-    console.log(request)
 
     //@ts-ignore
     const payload = JSON.parse(request.raw())
@@ -126,7 +125,7 @@ export default class UserController {
         }
       }
     }
-    console.log(username, password, email)
+
     var credentials: Credentials = { password: password, email: '', username: '' }
     if (email) {
       credentials['email'] = email
@@ -141,6 +140,7 @@ export default class UserController {
           message: 'You are not verified',
           data: {
             action: 'verification',
+            email: user.email,
           },
         })
 
@@ -148,6 +148,7 @@ export default class UserController {
       if (!passwordMatch) {
         return response.status(401).send('Invalid password')
       }
+
       const token = await auth.use('user').attempt(credentials?.email, credentials?.password)
       return response.json(token)
     } else if (username) {
@@ -161,6 +162,7 @@ export default class UserController {
           message: 'You are not verified',
           data: {
             action: 'verification',
+            email: user.email,
           },
         })
 
@@ -198,9 +200,6 @@ export default class UserController {
           })
         }
       } else {
-        console.log('fields ', all)
-        console.log('fields ', file)
-
         return response.json({
           message: 'Failed to update data',
         })
