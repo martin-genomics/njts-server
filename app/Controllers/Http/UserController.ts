@@ -14,7 +14,7 @@ interface Credentials {
   password: string
 }
 
-async function sendEmail(email) {
+async function sendEmail(email: string) {
   try {
     const otp = otpGenerator.generate(6, {
       lowerCaseAlphabets: false,
@@ -23,7 +23,7 @@ async function sendEmail(email) {
       specialChars: false,
     })
 
-    await Redis.set(`auth_${email}`, JSON.stringify({ email: email, otp: otp }))
+    await Redis.set(`auth_${email}`, JSON.stringify({ email: email, otp: otp }), 'EX', 60)
 
     await Mail.use('smtp').send(
       (message) => {
@@ -231,7 +231,7 @@ export default class UserController {
         specialChars: false,
       })
 
-      await Redis.set(`auth_${email}`, JSON.stringify({ email: email, otp: otp }))
+      await sendEmail(user.email)
 
       await Mail.use('smtp').send(
         (message) => {
@@ -252,7 +252,7 @@ export default class UserController {
         message:
           'The verification code has been sent to your email address and it will expire in 60s',
         data: {
-          user: user.email,
+          email: user.email,
         },
       })
     } catch (error) {
