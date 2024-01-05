@@ -181,7 +181,7 @@ export default class UserController {
     const all = request.all()
     const file = request.file('filename')
     const fs = require('fs')
-    fs.mkdirSync('/var/task/build/tmp', { recursive: true })
+    //fs.mkdirSync('/var/task/build/tmp', { recursive: true })
 
     try {
       if (file?.fieldName === 'filename') {
