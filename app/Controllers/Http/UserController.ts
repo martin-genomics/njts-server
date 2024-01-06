@@ -1,12 +1,9 @@
-import Application from '@ioc:Adonis/Core/Application'
 import Hash from '@ioc:Adonis/Core/Hash'
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { Attachment } from '@ioc:Adonis/Addons/AttachmentLite'
 import User from 'App/Models/User'
-import Mail from '@ioc:Adonis/Addons/Mail'
-import otpGenerator from 'otp-generator'
 import Redis from '@ioc:Adonis/Addons/Redis'
-
+import MailService from 'App/Modules/MailService'
 //const process.env.CYCLIC_DB
 interface Credentials {
   email: string
@@ -14,34 +11,6 @@ interface Credentials {
   password: string
 }
 
-async function sendEmail(email: string) {
-  try {
-    const otp = otpGenerator.generate(6, {
-      lowerCaseAlphabets: false,
-      upperCaseAlphabets: false,
-      digits: true,
-      specialChars: false,
-    })
-
-    await Redis.set(`auth_${email}`, JSON.stringify({ email: email, otp: otp }), 'EX', 60)
-
-    await Mail.use('smtp').send(
-      (message) => {
-        message.from('no-reply@njts.com')
-        message.to(email)
-        message.subject('NJTS: Account Verification')
-        message.html(`
-      ${otp}
-    `)
-      },
-      {
-        oTAGS: ['signup'],
-      }
-    )
-  } catch (error) {
-    console.log(error)
-  }
-}
 export default class UserController {
   public async index({ response, auth }: HttpContextContract) {
     const user = await auth.use('user').authenticate()
@@ -96,7 +65,7 @@ export default class UserController {
       product_id: 2,
     })
 
-    await sendEmail(email)
+    await MailService.sendOTP(email)
     return response.json({
       success: true,
       message:
@@ -180,8 +149,6 @@ export default class UserController {
     const user = await auth.use('user').authenticate()
     const all = request.all()
     const file = request.file('filename')
-    const fs = require('fs')
-    //fs.mkdirSync('/var/task/build/tmp', { recursive: true })
 
     try {
       if (file?.fieldName === 'filename') {
@@ -212,8 +179,10 @@ export default class UserController {
 
   public async generateOTP({ request, response }: HttpContextContract) {
     const { email } = request.only(['email'])
+    console.log('email', email)
     try {
       const user = (await User.findBy('email', email)) || (await User.findBy('username', email))
+      console.log('user', user)
       if (!user) {
         return response.unauthorized({ success: false, message: 'This email does not exist.' })
       }
@@ -224,28 +193,7 @@ export default class UserController {
           message: 'This email address is already verified',
         })
       }
-      const otp = otpGenerator.generate(6, {
-        lowerCaseAlphabets: false,
-        upperCaseAlphabets: false,
-        digits: true,
-        specialChars: false,
-      })
-
-      await sendEmail(user.email)
-
-      await Mail.use('smtp').send(
-        (message) => {
-          message.from('no-reply@njts.com')
-          message.to(email)
-          message.subject('NJTS: Account Verification')
-          message.html(`
-        ${otp}
-      `)
-        },
-        {
-          oTAGS: ['signup'],
-        }
-      )
+      await MailService.sendOTP(email)
 
       return response.json({
         success: true,
