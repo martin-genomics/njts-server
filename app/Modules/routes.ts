@@ -8,18 +8,23 @@ Route.group(() => {
   Route.get('/search', 'ProductController.search') // Create a new product
   Route.put('/:id', 'ProductController.update') // Update a specific product
   Route.get('/featured', 'ProductController.featured') //Add to featured to product
+  Route.get('/get-by-category/now', 'ProductController.getByCategory') // get by category
+  Route.get('/get-by-tag/now', 'ProductController.getByTag') // get by tag
+  Route.get('/related/now', 'ProductController.getRelated') // get related products
   Route.delete('/:id', 'ProductController.destroy') // Delete a specific product
 }).prefix('api/v1/products')
 
 Route.group(() => {
   Route.get('/', 'ProductController.search') // Create a new product
 }).prefix('api/v1/search')
+
 Route.group(() => {
   Route.get('/:id', 'ReviewController.show')
   Route.post('/add', 'ReviewController.add')
   Route.patch('/', 'ReviewController.update')
   Route.delete('/', 'ReviewController.destroy')
 }).prefix('api/v1/review')
+
 Route.group(() => {
   Route.get('/', 'ProductController.featured')
   Route.post('/', 'ProductController.featuredProducts')

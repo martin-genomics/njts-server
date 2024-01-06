@@ -16,6 +16,57 @@ export default class ProductsController {
     return response.json(product)
   }
 
+  public async getByCategory({ request, response }: HttpContextContract) {
+    const { category, page } = request.only(['category', 'page'])
+
+    const totalPages = (await Product.query().where('category', category)).length / 12
+    const allProducts = await Product.query().paginate(Number(page), 12)
+    const products = allProducts.filter((product) => product.category === category)
+
+    return response.json({
+      success: true,
+      message: 'Category products have been fetched.',
+      data: {
+        totalPages: totalPages,
+        category: category,
+        products: Array.from(products),
+      },
+    })
+  }
+  public async getByTag({ request, response }: HttpContextContract) {
+    const { tag, page } = request.only(['tag', 'page'])
+    const totalPages = (await Product.all()).length / 12
+    const allProducts = await Product.query().paginate(Number(page), 12)
+    const products = allProducts.filter((product) => product.tags.includes(tag))
+
+    return response.json({
+      success: true,
+      message: 'Products with the given category have been fetched.',
+      data: {
+        totalPages: totalPages,
+        tag: tag,
+        products: Array.from(products),
+      },
+    })
+  }
+
+  public async getRelated({ request, response }: HttpContextContract) {
+    const { category, page } = request.only(['category', 'page'])
+    const totalPages = (await Product.query().where('category', category)).length / 12
+    const allProducts = await Product.query().paginate(Number(page), 12)
+    const products = allProducts.filter((product) => product.category === category)
+
+    return response.json({
+      success: true,
+      message: 'Category products have been fetched.',
+      data: {
+        totalPages: totalPages,
+        category: category,
+        products: Array.from(products),
+      },
+    })
+  }
+
   public async add({ request, response, auth }: HttpContextContract) {
     const {
       barcode,
@@ -134,8 +185,7 @@ export default class ProductsController {
 
   public async search({ params, response, request }: HttpContextContract) {
     const { query } = request.only(['query'])
-    const regexPattern = new RegExp(params.keyword, 'i') // 'i' flag for case-insensitive search
-    console.log(query)
+
     const items = await Product.query()
       .where('name', 'like', `%${query}%`) // Basic like operator for simple substring matching
       .orWhere('name', 'regexp', '^' + query + '$') // Using regexp for more advanced regex matching
