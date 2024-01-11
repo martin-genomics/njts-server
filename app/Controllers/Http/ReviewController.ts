@@ -59,7 +59,7 @@ export default class ReviewController {
   public async update({ auth, request, response }: HttpContextContract) {
     const user = await auth.use('user').authenticate()
 
-    const { reviewId, productId, body } = request.only(['productId', 'reviewId', 'body'])
+    const { reviewId, productId, body, rating } = request.only(['productId', 'reviewId', 'body', 'rating'])
     const product = await Product.findOrFail(productId)
     await product.related('review_id').updateOrCreate(
       {
@@ -68,6 +68,7 @@ export default class ReviewController {
       {
         name: `${user.firstname} ${user.lastname}`,
         email: user.email,
+        rating:rating, 
         body: body,
       }
     )
